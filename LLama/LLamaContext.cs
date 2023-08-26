@@ -10,6 +10,9 @@ using LLama.Common;
 using System.Runtime.InteropServices;
 using LLama.Extensions;
 using LLama.Abstractions;
+using LLama.Sampling.Bias;
+using LLama.Sampling.Logits;
+using LLama.Sampling.Modifiers;
 
 namespace LLama
 {
@@ -125,6 +128,7 @@ namespace LLama
             return _ctx.Tokenize(text, addBos, _encoding);
         }
 
+        #region state
         /// <summary>
         /// Detokenize the tokens to text.
         /// </summary>
@@ -271,6 +275,7 @@ namespace LLama
                 _ctx.SetState((byte*)state.DangerousGetHandle().ToPointer());
             }
         }
+        #endregion
 
         /// <summary>
         /// Perform the sampling. Please don't use it unless you fully know what it does.
@@ -355,39 +360,41 @@ namespace LLama
             int repeatLastTokensCount = 64, float repeatPenalty = 1.1f, float alphaFrequency = .0f, float alphaPresence = .0f, 
             bool penalizeNL = true)
         {
-            var n_vocab = _ctx.VocabCount;
-            var logits = _ctx.GetLogits();
-
-            // Apply params.logit_bias map
-            if(logitBias is not null)
+            // Build bias/penalty pipelines
+            var savedLogits = new Dictionary<llama_token, float>();
+            var biases = new List<ILogitModifier>
             {
-                foreach (var (key, value) in logitBias)
+                new LogitBias(logitBias),
+                new SaveLogits(savedLogits)
                 {
-                    logits[key] += value;
-                }
-            }
+                    NativeApi.llama_token_nl()
+                },
+            };
 
-            var candidates = new LLamaTokenData[n_vocab];
-            for (llama_token token_id = 0; token_id < n_vocab; token_id++)
-                candidates[token_id] = new LLamaTokenData(token_id, logits[token_id], 0.0f);
-            LLamaTokenDataArray candidates_p = new LLamaTokenDataArray(candidates);
+            var penalties = new List<ITokenModifier>
+            {
+                new RepetitionPenalty { Penalty = repeatPenalty},
+                new FrequencyAndPresencePenalty { AlphaFrequency = alphaFrequency, AlphaPresence = alphaPresence },
+            };
+
+            if (!penalizeNL)
+                penalties.Add(new LoadLogits(savedLogits));
+
+            // Extract most recent tokens
+            var last_n_repeat = Math.Min(ContextSize, repeatLastTokensCount);
+            var lastTokensArr = lastTokens.TakeLast(last_n_repeat).ToArray();
+
+            // Apply biases
+            var logits = _ctx.GetLogits();
+            foreach (var bias in biases)
+                bias.Apply(logits);
 
             // Apply penalties
-            float nl_logit = logits[NativeApi.llama_token_nl()];
-            int lastTokensCount = lastTokens.Count();
-            var last_n_repeat = Math.Min(Math.Min(lastTokensCount, repeatLastTokensCount), ContextSize);
-            SamplingApi.llama_sample_repetition_penalty(_ctx, candidates_p,
-                lastTokens.Skip(lastTokensCount - last_n_repeat).ToArray(),
-                (ulong)last_n_repeat, repeatPenalty);
-            SamplingApi.llama_sample_frequency_and_presence_penalties(_ctx, candidates_p,
-                lastTokens.Skip(lastTokensCount - last_n_repeat).ToArray(),
-                (ulong)last_n_repeat, alphaFrequency, alphaPresence);
-            if (!penalizeNL)
-            {
-                logits[NativeApi.llama_token_nl()] = nl_logit;
-            }
+            var candidates = LLamaTokenDataArray.Create(logits);
+            foreach (var penalty in penalties)
+                penalty.Apply(_ctx, candidates, lastTokensArr);
 
-            return candidates_p;
+            return candidates;
         }
 
         #region eval overloads
@@ -473,7 +480,7 @@ namespace LLama
             }
             return pastTokensCount;
         }
-#endregion
+        #endregion
 
         internal IEnumerable<string> GenerateResult(IEnumerable<llama_token> ids)
         {
