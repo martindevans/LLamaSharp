@@ -133,6 +133,17 @@ public sealed class LLamaBatchSafeHandle
     /// <summary>
     /// https://github.com/ggerganov/llama.cpp/blob/ad939626577cd25b462e8026cc543efb71528472/common/common.cpp#L829C2-L829C2
     /// </summary>
+    public void LLamaBatchAdd(int token, LLamaPos pos, LLamaSeqId sequence, bool logits)
+    {
+        Span<LLamaSeqId> sequences = stackalloc LLamaSeqId[1];
+        sequences[0] = sequence;
+
+        LLamaBatchAdd(token, pos, sequences, logits);
+    }
+
+    /// <summary>
+    /// https://github.com/ggerganov/llama.cpp/blob/ad939626577cd25b462e8026cc543efb71528472/common/common.cpp#L829C2-L829C2
+    /// </summary>
     public void LLamaBatchAdd(int token, LLamaPos pos, ReadOnlySpan<LLamaSeqId> sequences, bool logits)
     {
         unsafe

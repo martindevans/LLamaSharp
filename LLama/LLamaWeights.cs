@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using LLama.Abstractions;
 using LLama.Extensions;
 using LLama.Native;
@@ -84,6 +85,16 @@ namespace LLama
             }
 
             return new LLamaWeights(weights);
+        }
+
+        /// <summary>
+        /// Load weights into memory
+        /// </summary>
+        /// <param name="params"></param>
+        /// <returns></returns>
+        public static Task<LLamaWeights> LoadFromFileAsync(IModelParams @params)
+        {
+            return Task.Run(() => LoadFromFile(@params));
         }
 
         /// <inheritdoc />

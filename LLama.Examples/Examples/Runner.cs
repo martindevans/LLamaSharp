@@ -24,6 +24,7 @@ public class Runner
         { "Semantic Kernel Memory.", SemanticKernelMemory.Run },
         { "Coding Assistant.", CodingAssistant.Run },
         { "Batch Decoding.", BatchedDecoding.Run },
+        { "Batch Decoding 2.", BatchedDecoding2.Run },
         { "SK Kernel Memory.", KernelMemory.Run },
         { "Exit", async () => Environment.Exit(0) }
     };
