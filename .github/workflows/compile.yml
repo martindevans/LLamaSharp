@@ -324,7 +324,7 @@ jobs:
       "compile-clblast"
     ]
     steps:      
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: List Files
