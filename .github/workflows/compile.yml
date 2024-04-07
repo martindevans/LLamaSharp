@@ -274,7 +274,7 @@ jobs:
       matrix:
         include:
           - build: 'arm64'
-            defines: '-DCMAKE_OSX_ARCHITECTURES=arm64'
+            defines: '-DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL_EMBED_LIBRARY=ON'
           - build: 'x64'
             defines: '-DCMAKE_OSX_ARCHITECTURES=x86_64 -DLLAMA_METAL=OFF -DLLAMA_AVX=ON -DLLAMA_AVX2=ON'
     runs-on: macos-latest   
