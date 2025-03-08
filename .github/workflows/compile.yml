@@ -269,7 +269,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-2019]
-        cuda: ['12.2.0', '11.7.1']
+        cuda: ['12.8.0', '11.7.1']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone
@@ -302,7 +302,7 @@ jobs:
           echo "CMAKE_CXX_FLAGS is $CMAKE_CXX_FLAGS"
           mkdir build
           cd build
-          cmake .. ${{ env.COMMON_DEFINE }} -DGGML_CUDA=ON
+          cmake .. ${{ env.COMMON_DEFINE }} -DGGML_CUDA=ON -DGGML_CUDA_COMPRESSION_MODE=size
           cmake --build . --config Release
           ls -R
 
