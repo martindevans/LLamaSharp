@@ -203,7 +203,7 @@ namespace LLama.Native
         LLAMA_FTYPE_MOSTLY_TQ2_0 = 37,
 
         /// <summary>
-        /// TODO
+        /// except 1d tensors
         /// </summary>
         LLAMA_FTYPE_MOSTLY_MXFP4_MOE = 38,
 
